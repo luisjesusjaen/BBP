@@ -1,0 +1,98 @@
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt
+
+class FinanceException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+def abrir_archivo(csv):  
+
+    try:
+        df = pd.read_csv(csv, sep='\t', na_values=['(NA)']).fillna(0)
+
+        if len(df.axes[1]) != 12:
+            print("No tiene doce columnas, por lo que no es el archivo")
+
+        else: print("Archivo correcto, Tiene 12 columnas.")
+        
+        cols = df.columns
+        for col in cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df = df.replace(np.nan, 0)
+
+        return df
+
+    except FileNotFoundError:
+        print('No existe el fichero que se dice gracias')
+        exit()
+
+    except FinanceException as e:
+        print(e.msg)
+        exit()
+
+def mostrar_tabla(dic,text):
+
+    df = pd.DataFrame([[key, dic[key]]
+                      for key in dic.keys()], columns = ["Mes", text])
+    print(df)
+    
+def mostrar_grafico(dic):
+    df = pd.DataFrame([[key, dic[key]]
+                      for key in dic.keys()], columns=['Mes', 'Ingresos'])
+
+    df.plot(x="Mes", y="Ingresos")
+    plt.show()
+
+def operaciones(df):
+    
+    saldos = {}
+
+    ingresos = {}
+    gastos = {}
+
+    for column in df.columns:
+        
+        ingreso = 0
+        gasto = 0
+        for n in range(len(df.index)):
+            
+            if int(df[column][n]) > 0:
+                ingreso += df[column][n]
+            else:
+                gasto += df[column][n] * -1
+
+        ingresos[column] = ingreso
+        gastos[column] = gasto
+        saldos[column] = df[column].sum()
+
+    totalGasto = sum(gastos.values())
+    mediaGasto = totalGasto / 12
+    totalIngreso = sum(ingresos.values())
+
+    return saldos, ingresos, gastos, mediaGasto, totalGasto, totalIngreso
+
+def return_max(dic):
+
+    return max(dic, key=dic.get)
+
+
+df = abrir_archivo("finanzas2020[1].csv")
+
+saldos, ingresos, gastos, mediaGasto, totalGasto, totalIngreso = operaciones(df)
+
+print("Viendo el siguiente archivo, obtenemos\n")
+mostrar_tabla(gastos, "Total gasto ")
+print("El mes con mas gastos es: ", return_max(gastos))
+input("Continue.")
+
+print("Viendo el siguiente archivo, obtenemos\n")
+mostrar_tabla(saldos, "Total gasto")
+print("El mes con mas gastos es: ", return_max(saldos))
+input("Continue.")
+
+print("La media de gastos al año es de", mediaGasto)
+print("El total de ingresos al año es de", totalIngreso)
+input('Continue. ')
+
+mostrar_grafico(ingresos)
